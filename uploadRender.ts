@@ -4,6 +4,9 @@ import { CloudinaryUploadResponse } from "./helpers/useFileUpload";
 import os from "os";
 import fs from "fs";
 import { spawn } from "child_process";
+import { CompositionProps } from "./types/constants";
+
+const inputPropsJsonPath = "./inputProps.json";
 
 async function uploadRender() {
   if (
@@ -24,12 +27,9 @@ async function uploadRender() {
 
   // const serializedInputProps = args["props"];
   const serializedInputProps = process.env.INPUT_PROPS ?? "{}";
-  const data = serializedInputProps;
+  const data = CompositionProps.parse(JSON.parse(serializedInputProps));
 
-  const inputPropsJsonPath = "./inputProps.json";
-
-  fs.writeFileSync(inputPropsJsonPath, data);
-
+  fs.writeFileSync(inputPropsJsonPath, JSON.stringify(data));
   const newProps = fs.readFileSync(inputPropsJsonPath, "utf8");
 
   console.log(`Rendering to:`, fileName);
