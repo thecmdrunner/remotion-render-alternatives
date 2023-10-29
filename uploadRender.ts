@@ -20,21 +20,19 @@ async function uploadRender() {
   const args = minimist(process.argv.slice(2));
 
   const fileName = args["fileName"] ?? "./out/MyComp.mp4";
-  const serializedInputProps = args["props"];
   const compId = args["compId"] ?? "MyComp";
 
+  // const serializedInputProps = args["props"];
+  const serializedInputProps = process.env.INPUT_PROPS ?? "{}";
   const data = serializedInputProps;
 
   const inputPropsJsonPath = "./inputProps.json";
 
-  fs.writeFile(inputPropsJsonPath, data, (err) => {
-    if (err) throw err;
-    console.log(`Props written to ${inputPropsJsonPath}`);
-  });
+  fs.writeFileSync(inputPropsJsonPath, data);
 
   const newProps = fs.readFileSync(inputPropsJsonPath, "utf8");
 
-  console.log(`Trying Rendering to:`, fileName);
+  console.log(`Rendering to:`, fileName);
 
   await new Promise<void>((resolve, reject) => {
     const renderProcess = spawn(
@@ -44,7 +42,7 @@ async function uploadRender() {
         "render",
         compId,
         `--props=${newProps}`,
-        "--output=out/MyComp1.mp4",
+        `--output=${fileName}`,
         "--enable-multiprocess-on-linux",
         "--concurrency=100%",
       ],
@@ -56,7 +54,6 @@ async function uploadRender() {
 
     renderProcess.on("exit", (code) => {
       if (code === 0) {
-        console.log("Finished rendering");
         resolve();
       } else {
         reject(new Error("Rendering failed"));
@@ -64,15 +61,15 @@ async function uploadRender() {
     });
   });
 
-  throw new Error("See if file exists...");
+  const exportedRenderBuffer = fs.readFileSync(fileName);
 
-  //   console.log(`Rendering with props:`, inputProps);
+  const exportedRenderFile = new File([exportedRenderBuffer], "render.mp4", {});
 
-  const exportedRenderFile = Bun.file(fileName);
-
-  console.log(`Uploading render...`, exportedRenderFile);
-
-  return;
+  console.log(`Uploading render...`, {
+    size: exportedRenderFile.size,
+    type: exportedRenderFile.type,
+    lastModified: exportedRenderFile.lastModified,
+  });
 
   const timestamp = Math.round(new Date().getTime() / 1000).toString();
 
@@ -96,10 +93,7 @@ async function uploadRender() {
   try {
     const res = await fetch(
       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
+      { method: "POST", body: formData }
     );
 
     if (!res.ok) {
@@ -118,9 +112,8 @@ async function uploadRender() {
   } catch (e) {
     // Set status to failed in db
     console.error(e);
+    throw new Error("Upload failed!");
   }
-
-  // exportedRenderFile
 }
 
 uploadRender();
