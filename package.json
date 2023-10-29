@@ -15,7 +15,6 @@
     "@remotion/bundler": "^4.0.59",
     "@remotion/cli": "^4.0.59",
     "@remotion/google-fonts": "^4.0.59",
-    "@remotion/lambda": "^4.0.59",
     "@remotion/paths": "^4.0.59",
     "@remotion/player": "^4.0.59",
     "@remotion/shapes": "^4.0.59",

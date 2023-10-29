@@ -12,7 +12,6 @@ export type State =
     }
   | {
       renderId: string;
-      bucketName: string;
       progress: number;
       status: "rendering";
     }
@@ -48,12 +47,22 @@ export const useRendering = (
       status: "invoking",
     });
     try {
-      const { renderId, bucketName } = await renderVideo({ id, inputProps });
+      const renderResult = await renderVideo({ id, inputProps });
+
+      if (!renderResult.success) {
+        setState({
+          status: "error",
+          error: new Error(renderResult.error),
+          renderId: null,
+        });
+        return;
+      }
+      const { pollingId } = renderResult;
+
       setState({
         status: "rendering",
         progress: 0,
-        renderId: renderId,
-        bucketName: bucketName,
+        renderId: pollingId,
       });
 
       let pending = true;

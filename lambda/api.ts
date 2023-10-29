@@ -1,31 +1,34 @@
 import { z } from "zod";
-import type { RenderMediaOnLambdaOutput } from "@remotion/lambda/client";
-import {
-  ProgressRequest,
-  ProgressResponse,
-  RenderRequest,
-} from "../types/schema";
+import { RenderRequest } from "../types/schema";
 import { CompositionProps } from "../types/constants";
-import { ApiResponse } from "../helpers/api-response";
 
-const makeRequest = async <Res>(
-  endpoint: string,
-  body: unknown
-): Promise<Res> => {
-  const result = await fetch(endpoint, {
-    method: "post",
-    body: JSON.stringify(body),
-    headers: {
-      "content-type": "application/json",
-    },
-  });
-  const json = (await result.json()) as ApiResponse<Res>;
-  if (json.type === "error") {
-    throw new Error(json.message);
-  }
+export const renderApiResponseSchema = z.union([
+  z.object({
+    success: z.literal(true),
+    pollingId: z.string(),
+  }),
 
-  return json.data;
-};
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+export type RenderApiResponse = z.infer<typeof renderApiResponseSchema>;
+
+export const progressApiResponseSchema = z.union([
+  z.object({
+    pollingId: z.string(),
+    success: z.literal(true),
+  }),
+
+  z.object({
+    success: z.literal(false),
+    error: z.string(),
+  }),
+]);
+
+export type progressApiResponse = z.infer<typeof renderApiResponseSchema>;
 
 export const renderVideo = async ({
   id,
@@ -39,7 +42,25 @@ export const renderVideo = async ({
     inputProps,
   };
 
-  return makeRequest<RenderMediaOnLambdaOutput>("/api/lambda/render", body);
+  const res = await fetch("/api/pipeline/render", {
+    body: JSON.stringify(body),
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      accept: "application/json",
+    },
+  });
+
+  if (res.ok) {
+    return {
+      success: false,
+      error: res.statusText,
+    } satisfies RenderApiResponse;
+  }
+
+  const result = renderApiResponseSchema.parse(await res.json());
+
+  return result;
 };
 
 export const getProgress = async ({
