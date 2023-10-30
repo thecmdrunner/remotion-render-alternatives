@@ -10,7 +10,7 @@
     "remotion": "remotion studio",
     "render": "remotion render",
     "deploy": "node deploy.mjs",
-    "render-upload": "dotenv ts-node uploadRender.ts --fileName=\"./out/MyComp.mp4\""
+    "render-upload": "dotenv bun uploadRender.mts --fileName=\"./out/MyComp.mp4\""
   },
   "dependencies": {
     "@remotion/bundler": "^4.0.59",
